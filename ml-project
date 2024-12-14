@@ -1,0 +1,75 @@
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.preprocessing import LabelEncoder
+import joblib  # For saving and loading the model
+
+# Load the dataset
+# Correcting the error: Using read_excel to load the .xlsx file
+df = pd.read_excel("/content/online payment fraud detection dataset.xlsx")
+
+# Display basic information about the dataset
+print("Dataset Overview:")
+print(df.info())
+print(df.describe())
+
+# Preprocessing
+# Encoding categorical columns
+label_encoder = LabelEncoder()
+df['type'] = label_encoder.fit_transform(df['type'])  # Convert transaction type into numeric
+
+# Handling missing values (if any)
+print(f"Missing Values:\n{df.isnull().sum()}")
+
+# Feature Selection: Choosing relevant columns for the model
+X = df[['step', 'type', 'amount', 'oldbalanceOrg', 'newbalanceOrig', 'oldbalanceDest', 'newbalanceDest']]
+y = df['isFraud']  # Target variable
+
+# Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Model Training
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
+
+# Predictions
+y_pred = model.predict(X_test)
+
+# Evaluation
+print("Classification Report:")
+print(classification_report(y_test, y_pred))
+
+print("Confusion Matrix:")
+conf_matrix = confusion_matrix(y_test, y_pred)
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues')
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+
+print("Accuracy Score:", accuracy_score(y_test, y_pred))
+
+# Feature Importance
+feature_importances = pd.DataFrame({
+    'Feature': X.columns,
+    'Importance': model.feature_importances_
+}).sort_values(by='Importance', ascending=False)
+
+print("Feature Importances:")
+print(feature_importances)
+
+# Save the trained model (optional)
+joblib.dump(model, 'fraud_detection_model.pkl')
+
+# Load the model (for future use)
+# loaded_model = joblib.load('fraud_detection_model.pkl')
+
+# Example of using the model for prediction
+example_data = [[10, 2, 1000, 5000, 4000, 2000, 3000]]  # Replace with your input data
+prediction = model.predict(example_data)
+print(f"Fraudulent Transaction Prediction: {prediction}")
